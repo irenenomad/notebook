@@ -186,3 +186,11 @@ https://www.cnblogs.com/zaking/p/9004976.html
 
 堆排序
 https://www.cnblogs.com/chengxiao/p/6129630.html
+
+koa中间件原理
+https://blog.csdn.net/u011392772/article/details/81153795
+
+数据结构示例
+https://github.com/loiane/javascript-datastructures-algorithms
+设计模式示例
+https://github.com/apress/pro-javascript-design-patterns

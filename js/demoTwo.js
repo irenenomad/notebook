@@ -211,3 +211,243 @@ function middleware2 (store) {
 }// applyMiddleware(middleware1, middleware2)
 
 applyMiddleware(middleware1, middleware2);
+
+var numbers = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
+// add a new element to the numbers array
+numbers[numbers.length] = 10;
+console.log('Add 10 to the end', numbers);
+
+numbers.push(11);
+console.log('Add 11 with push', numbers);
+
+numbers.push(12, 13,14,15);
+console.log('Add 12 and 13 with push', numbers);
+
+Array.prototype.insertFirstPosition = function(value) {
+  for (var i = this.length; i >= 0; i--) {
+    this[i] = this[i - 1];
+  }
+  this[0] = value;
+};
+
+numbers.insertFirstPosition(-1);
+console.log('Add -1 with insertFirstPosition', numbers);
+numbers.unshift(-2);
+console.log('Add -2 with unshift', numbers);
+//printArray(numbers);
+
+numbers.unshift(-4, -3);
+console.log('Add -4 and -3 with unshift', numbers);
+// printArray(numbers);
+
+// ************** Removing elements
+
+numbers.pop();
+console.log('Removed last value with pop', numbers);
+
+for (var i = 0; i < numbers.length; i++) {
+  numbers[i] = numbers[i + 1];
+}
+
+console.log('Removed first value manually', numbers);
+console.log('Lenght after value removed manually', numbers.length);
+
+var numbers = [-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+
+Array.prototype.reIndex = function(myArray) {
+  const newArray = [];
+  for(let i = 0; i < myArray.length; i++ ) {
+    if (myArray[i] !== undefined) {
+      // console.log(myArray[i]);
+      newArray.push(myArray[i]);
+    }
+  }
+  return newArray;
+}
+
+// remove first position manually and reIndex
+Array.prototype.removeFirstPosition = function() {
+  for (let i = 0; i < this.length; i++) {
+    this[i] = this[i + 1];
+  }
+  return this.reIndex(this);
+};
+
+ numbers = numbers.removeFirstPosition();
+console.log('Removed first with removeFirstPosition + reIndex', numbers);
+
+// using method shift
+numbers.shift();
+console.log('Removed first with shift', numbers);
+console.log('Lenght after removed first with shift', numbers.length);
+
+//* *** Removing and Adding elements from the middle of the array or specific position
+// splice method - parameter (index, howManyPositionsToBeRemoved, item1...itemX)
+numbers.splice(5, 3);
+console.log('Removing 3 elements (3, 4, 5) starting index 5', numbers);
+
+numbers.splice(5, 0, 2, 3, 4);
+console.log('Adding 3 elements (2, 3, 4) starting index 5', numbers);
+
+numbers.splice(5, 3, 2, 3, 4);
+console.log('Removing 3 elements starting index 5 and adding (2, 3, 4)', numbers);
+
+var averageTempDay1 = [72, 75, 79, 79, 81, 81];
+var averageTempDay2 = [81, 79, 75, 75, 73, 72];
+
+var averageTemp = [];
+
+// same as
+averageTemp[0] = [72, 75, 79, 79, 81, 81];
+averageTemp[1] = [81, 79, 75, 75, 73, 73];
+
+function printMatrix(myMatrix) {
+  for (var i = 0; i < myMatrix.length; i++) {
+    for (var j = 0; j < myMatrix[i].length; j++) {
+      console.log(myMatrix[i][j]);
+    }
+  }
+}
+
+//printMatrix(averageTemp);
+console.log('averageTemp two-dimensional array:');
+
+// same as
+
+// day 1
+averageTemp[0] = [];
+averageTemp[0][0] = 72;
+averageTemp[0][1] = 75;
+averageTemp[0][2] = 79;
+averageTemp[0][3] = 79;
+averageTemp[0][4] = 81;
+averageTemp[0][5] = 81;
+// day 2
+averageTemp[1] = [];
+averageTemp[1][0] = 81;
+averageTemp[1][1] = 79;
+averageTemp[1][2] = 75;
+averageTemp[1][3] = 75;
+averageTemp[1][4] = 73;
+averageTemp[1][5] = 73;
+
+printMatrix(averageTemp);
+console.table(averageTemp);
+
+//* * Multidimensional Matrix
+
+// Matrix 3x3x3 - Cube
+
+const matrix3x3x3 = [];
+for (var i = 0; i < 3; i++) {
+  matrix3x3x3[i] = [];
+  for (var j = 0; j < 3; j++) {
+    matrix3x3x3[i][j] = [];
+    for (var z = 0; z < 3; z++) {
+      matrix3x3x3[i][j][z] = i + j + z;
+    }
+  }
+}
+
+for (var i = 0; i < matrix3x3x3.length; i++) {
+  for (var j = 0; j < matrix3x3x3[i].length; j++) {
+    for (var z = 0; z < matrix3x3x3[i][j].length; z++) {
+      console.log(matrix3x3x3[i][j][z]);
+    }
+  }
+}
+
+// user-friendly-output
+const matrix3x3x3Output = [];
+for (var i = 0; i < 3; i++) {
+  matrix3x3x3Output[i] = [];
+  for (var j = 0; j < 3; j++) {
+    matrix3x3x3Output[i][j] = `[${matrix3x3x3[i][j].join(', ')}]`;
+  }
+}
+console.log('matrix3x3x3 three-dimensional array:');
+console.table(matrix3x3x3Output);
+
+const zero = 0;
+const positiveNumbers = [1, 2, 3];
+const negativeNumbers = [-3, -2, -1];
+var numbers = negativeNumbers.concat(zero, positiveNumbers);
+
+console.log('zero', zero);
+console.log('positiveNumbers', positiveNumbers);
+console.log('negativeNumbers', negativeNumbers);
+console.log('negativeNumbers.concat(zero, positiveNumbers)', numbers);
+
+/* function isEven(x) {
+  // returns true if x is a multiple of 2.
+  console.log(x);
+  return x % 2 === 0 ? true : false;
+} */ // ES5 syntax
+const isEven = x => x % 2 === 0;
+
+var numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+console.log('numbers', numbers);
+
+// it is going to execute the function only once
+console.log('numbers.every(isEven)', numbers.every(isEven));
+
+// is going to execute the function twice
+console.log('numbers.some(isEven)', numbers.some(isEven));
+
+/* numbers.forEach(function(x) {
+  console.log(x % 2 == 0);
+}); */ // ES5 sintax for function below
+
+numbers.forEach(x => console.log(`numbers.forEach: ${x} % 2 === 0`, x % 2 === 0));
+
+
+console.log('numbers.map(isEven)', numbers.map(isEven));
+
+console.log('numbers.filter(isEven)', numbers.filter(isEven));
+
+/* console.log('numbers.reduce',
+  numbers.reduce(function(previous, current, index) {
+    return previous + current;
+  })
+); */ // ES5 sintax for function below
+
+console.log('numbers.reduce', numbers.reduce((previous, current) => previous + current));
+
+var isEven = function isEven(x) {
+  return x % 2 === 0;
+};
+
+var numbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+console.log('numbers', numbers); // it is going to execute the function only once
+
+console.log('numbers.every(isEven)', numbers.every(function isEven(x) {
+  return x % 2 === 0;
+})); // is going to execute the function twice
+
+console.log('numbers.some(isEven)', numbers.some(function isEven(x) {
+  return x % 2 === 0;
+}));
+/* numbers.forEach(function(x) {
+  console.log(x % 2 == 0);
+}); */
+// ES5 sintax for function below
+
+numbers.forEach(function (x) {
+  return console.log("numbers.forEach: ".concat(x, " % 2 === 0"), x % 2 === 0);
+});
+console.log('numbers.map(isEven)', numbers.map(function isEven(x) {
+  return x % 2 === 0;
+}));
+console.log('numbers.filter(isEven)', numbers.filter(function isEven(x) {
+  return x % 2 === 0;
+}));
+/* console.log('numbers.reduce',
+  numbers.reduce(function(previous, current, index) {
+    return previous + current;
+  })
+); */
+// ES5 sintax for function below
+
+console.log('numbers.reduce', numbers.reduce(function (previous, current) {
+  return previous + current;
+}));
