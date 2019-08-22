@@ -14,7 +14,8 @@
         服务端渲染是false；
 （3）调用DomRenderer.createContainer函数再调用createFiberRoot创建FiberRoot。
 （4）调用DomRenderer.updateContainer函数传入<app/>和FiberRoot以及callback，相关步骤如下：
-        计算expirationTime；
+        获取currentTime。
+        通过FiberRoot和currentTime计算expirationTime。；
         再调用scheduleRootUpdate相关步骤如下：
             调用createUpdate创建update；
             把一开render传入的ReactNodeList赋值给update.payload,callback赋值给update.callback;
