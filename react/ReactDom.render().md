@@ -17,6 +17,7 @@
         计算expirationTime；
         再调用scheduleRootUpdate相关步骤如下：
             调用createUpdate创建update；
+            把一开render传入的ReactNodeList赋值给update.payload,callback赋值给update.callback;
             把update放入enqueueUpdate；
             最后根据expirationTime开始分优先级任务调度（scheduleWork）；
 
