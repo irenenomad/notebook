@@ -12,15 +12,15 @@
 ###### （6）DocumentFragment : 文档碎片（高效批量更新多个节点）
 #### 3、数据代理：
 ###### （1）概念：通过一个对象代理另一个对象中属性的操作（读/写），vue通过vm对象来代理data对象中所有的属性操作。
-###### （2) 基本流程：
+###### （2） 基本流程：
 	a、在vue构造函数内传入数据初始化。
-    b、遍历 **Object.keys(data)** 得到vm.data对象自身可枚举属性组成的数组，依次把属性传入并调用vm._proxy(key)方法。
+    b、遍历Object.keys(data)得到vm.data对象自身可枚举属性组成的数组，依次把属性传入并调用vm._proxy(key)方法。
 	c、vm._proxy(key)方法，通过Object.defineProperty()给vm添加与data对象的属性对应的属性描述符。
 	d、所有添加的属性都包含getter/setter（对象属性分为数据属性和访问器属性，这里是访问器属性）。
 	e、getter/setter内部去操作vm.data中对应的属性数据。
 #### 4、模板解析：
 ###### 基本概念：
-###### （1)compileUtil数据绑定bind到vm上和new Watcher，bind调用updater。
+###### （1）compileUtil数据绑定bind到vm上和new Watcher，bind调用updater。
 ###### （2）updater更新节点数据，不同的指令调用不同的更新方法。
 ###### 基本流程：
 	a、new一个compile对象传入option.el选择器字符串和vm实例。
