@@ -39,8 +39,50 @@
 ![vue](zhouqi.png)
 ##### 相关概念：
 ##### 流程描述：
-    （1）
+（1）new vue()构造函数
+```js
+    function Vue (options) {
+      if (process.env.NODE_ENV !== 'production' &&
+        !(this instanceof Vue)
+      ) {
+        warn('Vue is a constructor and should be called with the `new` keyword')
+      }
+      this._init(options)
+    }
+    
+    initMixin(Vue)
+    stateMixin(Vue)
+    eventsMixin(Vue)
+    lifecycleMixin(Vue)
+    renderMixin(Vue)
+    
+    export default Vue
+```
+(2) 调用initMixin方法:
+###### 在beforeCreate钩子被执行之前，先执行initLifecycle、initEvents、initRender，
+###### 在created钩子被执行之前，先执行initInjections、initState、initProvide
 
+```js
+export function initMixin (Vue) {
+	// 注意此处的 _init 方法，与 Vue 构造函数中的 _init 是同一个方法
+	Vue.prototype._init = function (options) {
+		const vm = this
+		// 合并options (已简化处理)
+		vm.$options = mergeOptions(resolveConstructorOptions(vm.constructor),options,vm)
+		vm._self = vm
+	    initLifecycle(vm)
+	    initEvents(vm)
+	    initRender(vm)
+	    // 注意此处!!! 
+	    callHook(vm, 'beforeCreate') // beforeCreate 钩子被执行
+	    initInjections(vm) // resolve injections before data/props
+	    initState(vm)
+	    initProvide(vm) // resolve provide after data/props
+	    // 注意此处!!! 
+	    callHook(vm, 'created')// created钩子被执行
+	}
+}
+```
 #### 4、vuex install方法：
 ##### 相关概念：
     b、beforeCreate
