@@ -83,6 +83,65 @@ export function initMixin (Vue) {
 	}
 }
 ```
+###### $options 检测el、template，判断并调用vm.$mount挂载
+```js
+    callHook(vm, 'created')
+
+    /* istanbul ignore if */
+    if (process.env.NODE_ENV !== 'production' && config.performance && mark) {
+      vm._name = formatComponentName(vm, false)
+      mark(endTag)
+      measure(`vue ${vm._name} init`, startTag, endTag)
+    }
+// 判断el元素
+    if (vm.$options.el) {
+      // 挂载该el Dom元素
+      vm.$mount(vm.$options.el)
+    }
+  }
+``` 
+
+```js
+import Vue from './runtime/index'
+// 保存 $mount 
+const mount = Vue.prototype.$mount
+// 这里采用装饰器设计模式，重写$mount方法
+Vue.prototype.$mount = function (el, hydrating) {
+	const options = this.$options
+	// resolve template/el and convert to render function
+	if(!options.render) {
+		let template = options.template
+		// 判断是否存在template方法
+		if(template) {
+			if(typeof template === 'string') {
+				// 通过#id获取dom
+				template = idToTemplate(template)
+			} else if(template.nodeType) {
+				// Dom 节点
+				template = template.innerHTML 
+			} else {
+				return this
+			}
+		} else if(el) {
+			// 如果不存在template
+			template = getOuterHTML(el)
+		}
+	}
+	// ...
+	// 执行旧的 $mount 方法
+	return mount.call(this, el, hydrating)
+}
+function getOuterHTML(el) {
+	if(el.outerHTML) {
+		return el.outerHTML
+	} else {
+		const container = document.createElement('div')
+		container.appendChild(el.cloneNode(true))
+		return container.innerHTML
+	}
+}
+``` 
+
 #### 4、vuex install方法：
 ##### 相关概念：
     b、beforeCreate
