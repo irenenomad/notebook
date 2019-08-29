@@ -9,7 +9,7 @@
 ###### （3）object.defineProperty(obj, propertyName,{}) : 给对象添加属性（指定描述符）。
 ###### （4）object.keys(obj) : 得到对象自身可枚举属性组成的数组。
 ###### （5）object.hasOwnProperty(prop) : 判断prop是否是obj自身的属性。
-###### （6）DocumentFragment : 文档碎片（高效批量更新多个节点）
+###### （6）DocumentFragment : 文档碎片（高效批量更新多个节点）,DocumentFragment节点不属于文档树，继承的parentNode属性总是null，把一个DocumentFragment节点插入文档树时，插入的不是DocumentFragment自身，而是它的所有子孙节点。这使得DocumentFragment成了有用的占位符，暂时存放那些一次插入文档的节点。它还有利于实现文档的剪切、复制和粘贴操作。对页面DOM进行操作的时候必然会导致多次重绘、回流。会加大页面的负担，影响页面的性能。因此我们可以创建这样一个临时占位符。         
 #### 3、数据代理：
 ###### （1）概念：通过一个对象代理另一个对象中属性的操作（读/写），vue通过vm对象来代理data对象中所有的属性操作。
 ###### （2） 基本流程：
