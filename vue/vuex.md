@@ -100,47 +100,135 @@ export function initMixin (Vue) {
     }
   }
 ``` 
-
+###### beforeMount、mounted (挂载/渲染dom)
 ```js
-import Vue from './runtime/index'
-// 保存 $mount 
-const mount = Vue.prototype.$mount
-// 这里采用装饰器设计模式，重写$mount方法
-Vue.prototype.$mount = function (el, hydrating) {
-	const options = this.$options
-	// resolve template/el and convert to render function
-	if(!options.render) {
-		let template = options.template
-		// 判断是否存在template方法
-		if(template) {
-			if(typeof template === 'string') {
-				// 通过#id获取dom
-				template = idToTemplate(template)
-			} else if(template.nodeType) {
-				// Dom 节点
-				template = template.innerHTML 
-			} else {
-				return this
-			}
-		} else if(el) {
-			// 如果不存在template
-			template = getOuterHTML(el)
+/**
+* $mount
+* @params el {Dom} 挂载的Dom元素
+* @params hydrating {Boolean} 与服务端渲染有关，web端可以忽略
+ **/
+// public mount method
+Vue.prototype.$mount = function (
+  el,
+  hydrating
+) {
+  // 判断是否存在el 以及在浏览器环境
+  el = el && inBrowser ? query(el) : undefined;
+  // 调用 mountComponent
+  return mountComponent(this, el, hydrating)
+};
+/**
+* 挂载组件
+ **/
+function mountComponent (
+  vm,
+  el,
+  hydrating
+) {
+  // 绑定$el(create vm.$el and replace el with it)
+  vm.$el = el;
+  if (!vm.$options.render) {
+    vm.$options.render = createEmptyVNode;
+    {
+      /* istanbul ignore if */
+      if ((vm.$options.template && vm.$options.template.charAt(0) !== '#') ||
+        vm.$options.el || el) {
+        warn(
+          'You are using the runtime-only build of Vue where the template ' +
+          'compiler is not available. Either pre-compile the templates into ' +
+          'render functions, or use the compiler-included build.',
+          vm
+        );
+      } else {
+        warn(
+          'Failed to mount component: template or render function not defined.',
+          vm
+        );
+      }
+    }
+  }
+  callHook(vm, 'beforeMount'); // beforeMount 钩子被调用
+
+  var updateComponent;
+  /* istanbul ignore if */
+  if (config.performance && mark) {
+    updateComponent = function () {
+      var name = vm._name;
+      var id = vm._uid;
+      var startTag = "vue-perf-start:" + id;
+      var endTag = "vue-perf-end:" + id;
+
+      mark(startTag);
+      var vnode = vm._render();
+      mark(endTag);
+      measure(("vue " + name + " render"), startTag, endTag);
+
+      mark(startTag);
+      vm._update(vnode, hydrating);
+      mark(endTag);
+      measure(("vue " + name + " patch"), startTag, endTag);
+    };
+  } else {
+    updateComponent = function () {
+      // 更新视图，第一个参数返回VNode
+      vm._update(vm._render(), hydrating);
+    };
+  }
+
+  // we set this to vm._watcher inside the watcher's constructor
+  // since the watcher's initial patch may call $forceUpdate (e.g. inside child
+  // component's mounted hook), which relies on vm._watcher being already defined
+  new Watcher(vm, updateComponent, noop, {
+    before: function before () {
+      // 判断元素已经被挂载,并且未被销毁
+      if (vm._isMounted && !vm._isDestroyed) {
+        callHook(vm, 'beforeUpdate'); // 调用 beforeUpdate 钩子
+      }
+    }
+  }, true /* isRenderWatcher */);
+  hydrating = false;
+
+  // manually mounted instance, call mounted on self
+  // mounted is called for render-created child components in its inserted hook
+  if (vm.$vnode == null) {
+    // 修改当前 vm 的状态
+    vm._isMounted = true;
+    callHook(vm, 'mounted'); // mounted 钩子被调用
+  }
+  return vm
+}
+````
+###### 6.beforeDestroye、destroyed
+````js
+export function lifecycleMixin (Vue) {
+	Vue.prototype.$destroy = function () {
+		const vm = this
+		// 注意此处
+		callHook(vm, 'beforeDestroy') // 调用 beforeDestroy
+		// 清除wathcer
+		if(vm._watcher) {
+			vm._wathcer.teardown()
+		}
+		let i = vm._watchers.length
+		while(i--){
+			vm._watchers[i].teardown()
+		}
+		// 修改vm状态
+		vm._isDestroyed = true
+		// invoke destroy hooks on current rendered tree
+		vm.__patch__(vm._vnode, null)
+		callHook(vm, 'destroyed')
+		// 关闭vm实例的listener
+		vm.$off()
+		if(vm.$el) {
+			vm.$el.__vue__ = null
+		}
+		if(vm.$vnode) {
+			vm.$vnode.parent = null
 		}
 	}
-	// ...
-	// 执行旧的 $mount 方法
-	return mount.call(this, el, hydrating)
 }
-function getOuterHTML(el) {
-	if(el.outerHTML) {
-		return el.outerHTML
-	} else {
-		const container = document.createElement('div')
-		container.appendChild(el.cloneNode(true))
-		return container.innerHTML
-	}
-}
-``` 
+````
 
 #### 4、vuex install方法：
 ##### 相关概念：
