@@ -35,6 +35,9 @@
         a、替换式el、props、methods、computed，这一类的行为是新的参数替代旧的参数。
         b、合并式data，这一类的行为是新传入的参数会被合并到旧的参数中。
         c、队列式watch、生命周期钩子（hooks），这一类的行为是所有的参数会被合并到一个数组中，必要时再依次取出。
+        
+#### 3、Vue.$nextTick，Vue 在修改数据后，视图不会立刻更新，而是等同一事件循环中的所有数据变化完成之后，再统一进行视图更新。Vue.$nextTick(callback)，当dom发生变化更新后执行的回调。this.$nextTick和setTimeout的效果是一样的，都是将回调方法放入异步队列中this.$nextTick是当dom发生变化更新后执行的回调。setTimeout只是一个异步延迟执行
+
 #### 3、vue生命周期源码解析：
 ![vue](zhouqi.png)
 ##### 相关概念：
@@ -100,7 +103,7 @@ export function initMixin (Vue) {
     }
   }
 ``` 
-###### beforeMount、mounted (挂载/渲染dom)
+###### beforeMount、mounted (挂载/渲染dom)beforeUpdate
 ```js
 /**
 * $mount
@@ -198,7 +201,41 @@ function mountComponent (
   return vm
 }
 ````
-###### 6.beforeDestroye、destroyed
+````js
+function lifecycleMixin (Vue) {
+  Vue.prototype._update = function (vnode, hydrating) {
+    var vm = this;
+    var prevEl = vm.$el;
+    var prevVnode = vm._vnode;
+    var restoreActiveInstance = setActiveInstance(vm);
+    vm._vnode = vnode;
+    // Vue.prototype.__patch__ is injected in entry points
+    // based on the rendering backend used.
+    if (!prevVnode) {
+      // initial render
+      vm.$el = vm.__patch__(vm.$el, vnode, hydrating, false /* removeOnly */);
+    } else {
+      // updates
+      vm.$el = vm.__patch__(prevVnode, vnode);
+    }
+    restoreActiveInstance();
+    // update __vue__ reference
+    if (prevEl) {
+      prevEl.__vue__ = null;
+    }
+    if (vm.$el) {
+      vm.$el.__vue__ = vm;
+    }
+    // if parent is an HOC, update its $el as well
+    if (vm.$vnode && vm.$parent && vm.$vnode === vm.$parent._vnode) {
+      vm.$parent.$el = vm.$el;
+    }
+    // updated hook is called by the scheduler to ensure that children are
+    // updated in a parent's updated hook.
+  };
+
+````
+###### beforeDestroye、destroyed
 ````js
 export function lifecycleMixin (Vue) {
 	Vue.prototype.$destroy = function () {
@@ -236,3 +273,8 @@ export function lifecycleMixin (Vue) {
 ##### 流程描述：
     （1）确保Vuex只安装一次。
     （2）混入beforeCreate钩子函数，可以在组件中使用this.$store。
+#### 5、vuex
+##### 重要的方法如下：
+![vuex](vuex.png)
+##### 运行流程图：
+![vuexyunxing](vuexyunxing.png)

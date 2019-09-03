@@ -17,9 +17,9 @@
     进入异步调度流程（这里接下来着重讲异步调度流程）。
     （3）scheduleCallbackWithExpirationTime里判断callbackExpirationTime是否等于NoWork（判断是否有旧任务已经在执行了），是就和expirationTime比较
     优先级哪个高，expirationTime更小就通过callbackID把当前旧的任务cancel掉，更大就直接return跳出流程。调用scheduleDefferredCallback传入
-    performSyncWork方法和timeout时间并生成新的callbackID，再更新callbackExpirationTime。
-    （4）scheduleDefferredCallback里当前任务的expirationTime是currentEventStartTime加timeout时间之和，并创建firstCallbackNode双向链表，链表按
-    expirationTime的优先级排序。
+    performAsyncWork方法和timeout时间并生成新的callbackID，再更新callbackExpirationTime。
+    （4）scheduleDefferredCallback里当前任务的expirationTime是currentEventStartTime加timeout时间之和，并创建firstCallbackNode双向链表，
+    之前传入的performAsyncWork方法就是每个链表节点中的callback方法，执行callback就是执行performAsyncWork方法，链表按expirationTime的优先级排序。
     （5）调用ensureHostCallbackIsScheduled方法，判断（isExecutingCallback是true还是false）是否已经执行了performSyncWork有就直接return跳出流程，没有继续
     流程，判断（isHostCallbackScheduled）HostCallback有没有进入调度，没有就设为true，有就cancel已有的hostCallback。
     （6）调用requestHostCallback方法，传入flushWork方法（firstCallbackNode节点的callback）和expirationTime即要被调度的对象，判断超时就不用等待requsetAnimationFrame
