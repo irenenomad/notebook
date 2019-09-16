@@ -6,7 +6,55 @@ listen(...args) {
     return server.listen(...args);
   }
 ````
-##### 2、callback 
+##### 2、http.createServer node创建服务器的方法
+````js
+var http = require('http');
+http.createServer(function (request, response) {
+	response.end('Hello World\n');
+}).listen(9297);
+````
+````js
+function createServer(requestListener) {
+  return new Server(requestListener);
+}
+````
+````js
+function Server(options, connectionListener) {
+  if (!(this instanceof Server))
+    return new Server(options, connectionListener);
+
+  EventEmitter.call(this);
+  // connectionListener在http.js处理过了
+  if (typeof options === 'function') {
+    connectionListener = options;
+    options = {};
+    this.on('connection', connectionListener);
+  } else if (options == null || typeof options === 'object') {
+    options = options || {};
+
+    if (typeof connectionListener === 'function') {
+      this.on('connection', connectionListener);
+    }
+  } else {
+    throw new errors.TypeError('ERR_INVALID_ARG_TYPE',
+                               'options',
+                               'Object',
+                               options);
+  }
+
+  this._connections = 0;
+  ......
+  this[async_id_symbol] = -1;
+  this._handle = null;
+  this._usingWorkers = false;
+  this._workers = [];
+  this._unref = false;
+
+  this.allowHalfOpen = options.allowHalfOpen || false;
+  this.pauseOnConnect = !!options.pauseOnConnect;
+}
+````
+##### 3、callback 
     （1）compose middleware数组
     （2）调用createContext创建上下文
     （3）调用handleRequest
@@ -24,7 +72,7 @@ callback() {
     return handleRequest;
   }
 ````
-##### 3、compose异步递归嵌套数组里的每一个中间件。
+##### 4、compose异步递归嵌套数组里的每一个中间件。
 ````js
 function compose (middleware) {
   if (!Array.isArray(middleware)) throw new TypeError('Middleware stack must be an array!')
@@ -37,7 +85,7 @@ function compose (middleware) {
    * @return {Promise}
    * @api public
    */
-
+  //在中间件里的第一句代码调用这个方法
   return function (context, next) {
     // last called middleware #
     let index = -1
@@ -58,7 +106,7 @@ function compose (middleware) {
 }
 
 ````
-##### 4、createContext
+##### 5、createContext
 ````js
  createContext(req, res) {
     const context = Object.create(this.context);
@@ -75,7 +123,7 @@ function compose (middleware) {
     return context;
   }
 ````
-##### 5、handleRequest传入上下文正式调用执行嵌套好的中间件。
+##### 6、handleRequest传入上下文正式调用执行嵌套好的中间件。
 ````js
 handleRequest(ctx, fnMiddleware) {
     const res = ctx.res;
