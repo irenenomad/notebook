@@ -1016,3 +1016,67 @@ module.exports = function dispatchRequest(config) {
   });
 };
 ````
+##### 9、CancelToken.js
+````js
+/**
+ * A `CancelToken` is an object that can be used to request cancellation of an operation.
+ *
+ * @class
+ * @param {Function} executor The executor function.
+ */
+// axios用于取消请求的类
+function CancelToken(executor) {
+  if (typeof executor !== 'function') {
+    throw new TypeError('executor must be a function.');
+  }
+
+  var resolvePromise;
+  // 创建一个Promise
+  // 在调用cancel函数前该promise会一直处于pending状态
+  this.promise = new Promise(function promiseExecutor(resolve) {
+    resolvePromise = resolve;
+  });
+
+  var token = this;
+  executor(function cancel(message) {
+     // 判断是否已经取消请求了
+    if (token.reason) {
+      // Cancellation has already been requested
+      return;
+    }
+  
+    // 创建取消请求的信息，并将信息添加到实例的reason属性上
+    token.reason = new Cancel(message);
+     // 结束this.promise的pending状态
+     // 将this.promise状态设置为resolve
+    resolvePromise(token.reason);
+  });
+}
+
+/**
+ * Throws a `Cancel` if cancellation has been requested.
+ */
+CancelToken.prototype.throwIfRequested = function throwIfRequested() {
+  if (this.reason) {
+    throw this.reason;
+  }
+};
+
+/**
+ * Returns an object that contains a new `CancelToken` and a function that, when called,
+ * cancels the `CancelToken`.
+ */
+// 判断该请求是否已经被取消的方法
+CancelToken.source = function source() {
+  var cancel;
+  var token = new CancelToken(function executor(c) {
+    cancel = c;
+  });
+  return {
+    token: token,
+    cancel: cancel
+  };
+};
+
+module.exports = CancelToken;
+````
