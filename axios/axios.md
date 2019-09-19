@@ -599,3 +599,420 @@ module.exports = function buildURL(url, params, paramsSerializer) {
 ````
 ##### 4、Axios.js
 ![axios](axios.png)
+````js
+/**
+ * Create a new instance of Axios
+ *
+ * @param {Object} instanceConfig The default config for the instance
+ */
+function Axios(instanceConfig) {
+  // Axios的配置
+  this.defaults = instanceConfig;
+  // 拦截器
+  this.interceptors = {
+    request: new InterceptorManager(),// 请求拦截器
+    response: new InterceptorManager() // 响应拦截器
+  };
+}
+
+/**
+ * Dispatch a request
+ *
+ * @param {Object} config The config specific for this request (merged with this.defaults)
+ */
+Axios.prototype.request = function request(config) {
+  /*eslint no-param-reassign:0*/
+  // Allow for axios('example/url'[, config]) a la fetch API
+   // 如果config是一个字符串，把字符串当作请求的url地址
+  if (typeof config === 'string') {
+    config = arguments[1] || {};
+    config.url = arguments[0];
+  } else {
+    config = config || {};
+  }
+
+    // 合并配置
+  config = mergeConfig(this.defaults, config);
+  // 如果没有指定请求方法，使用get方法
+  config.method = config.method ? config.method.toLowerCase() : 'get';
+
+  // Hook up interceptors middleware
+  // 将请求拦截器，和响应拦截器，以及实际的请求（dispatchRequest）的方法组合成数组，类似如下的结构
+  // [请求拦截器1success, 请求拦截器1error, 请求拦截器2success, 请求拦截器2error, dispatchRequest, undefined, 响应拦截器1success, 响应拦截器1error]
+  
+  var chain = [dispatchRequest, undefined];
+  var promise = Promise.resolve(config);
+
+  this.interceptors.request.forEach(function unshiftRequestInterceptors(interceptor) {
+    chain.unshift(interceptor.fulfilled, interceptor.rejected);
+  });
+
+  this.interceptors.response.forEach(function pushResponseInterceptors(interceptor) {
+    chain.push(interceptor.fulfilled, interceptor.rejected);
+  });
+  
+  // 开始执行整个请求流程（请求拦截器->dispatchRequest->响应拦截器）
+  // 流程可以理解为上图
+  while (chain.length) {
+    promise = promise.then(chain.shift(), chain.shift());
+  }
+
+  return promise;
+};
+
+Axios.prototype.getUri = function getUri(config) {
+  config = mergeConfig(this.defaults, config);
+  return buildURL(config.url, config.params, config.paramsSerializer).replace(/^\?/, '');
+};
+
+// Provide aliases for supported request methods
+// 基于Axios.prototype.request封装其他方法
+// 将delete，get，head，options，post，put，patch添加到Axios.prototype的原型链上
+// Axios.prototype.delete =
+// Axios.prototype.get =
+// Axios.prototype.head =
+// Axios.prototype.options =
+// ...
+utils.forEach(['delete', 'get', 'head', 'options'], function forEachMethodNoData(method) {
+  /*eslint func-names:0*/
+  Axios.prototype[method] = function(url, config) {
+    return this.request(utils.merge(config || {}, {
+      method: method,
+      url: url
+    }));
+  };
+});
+
+utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+  /*eslint func-names:0*/
+  Axios.prototype[method] = function(url, data, config) {
+    return this.request(utils.merge(config || {}, {
+      method: method,
+      url: url,
+      data: data
+    }));
+  };
+});
+
+module.exports = Axios;
+````
+##### 5、axios.js
+````js
+// 创建axios实例
+function createInstance(defaultConfig) {
+  var context = new Axios(defaultConfig);
+  var instance = bind(Axios.prototype.request, context);
+
+  // Copy axios.prototype to instance
+  // 更改Axios.prototype.request的this，执行context实例
+  // instance等于Axios.prototype.request方法
+  utils.extend(instance, Axios.prototype, context);
+
+  // Copy context to instance
+  utils.extend(instance, context);
+
+  return instance;
+}
+
+// Create the default instance to be exported
+// axios会直接对使用者暴露一个axios.request的方法，所以我们在使用axios的时候可以这样使用。不需要new一个axios的实例
+// import axios from 'axios'
+// axios.get('/info')
+var axios = createInstance(defaults);
+
+// Expose Axios class to allow class inheritance
+axios.Axios = Axios;
+
+// Factory for creating new instances
+// axios.create可以根据用户自定义的config生成一个新的axios实例
+axios.create = function create(instanceConfig) {
+  return createInstance(mergeConfig(axios.defaults, instanceConfig));
+};
+
+// Expose Cancel & CancelToken
+axios.Cancel = require('./cancel/Cancel');
+axios.CancelToken = require('./cancel/CancelToken');
+axios.isCancel = require('./cancel/isCancel');
+
+// Expose all/spread
+axios.all = function all(promises) {
+  return Promise.all(promises);
+};
+axios.spread = require('./helpers/spread');
+
+module.exports = axios;
+
+// Allow use of default import syntax in TypeScript
+module.exports.default = axios;
+````
+##### 6、defaults.js
+````js
+// 默认Content-Type
+var DEFAULT_CONTENT_TYPE = {
+  'Content-Type': 'application/x-www-form-urlencoded'
+};
+
+// 设置ContentType，在没有设置的情况下
+function setContentTypeIfUnset(headers, value) {
+  if (!utils.isUndefined(headers) && utils.isUndefined(headers['Content-Type'])) {
+    headers['Content-Type'] = value;
+  }
+}
+
+// 根据当前环境，获取默认的请求方法
+function getDefaultAdapter() {
+  var adapter;
+  // Only Node.JS has a process variable that is of [[Class]] process
+  // 判断当前环境是否存在process对象
+  if (typeof process !== 'undefined' && Object.prototype.toString.call(process) === '[object process]') {
+    // For node use HTTP adapter
+     // node环境
+    adapter = require('./adapters/http');
+  } else if (typeof XMLHttpRequest !== 'undefined') {
+    // For browsers use XHR adapter
+     // 浏览器环境
+    adapter = require('./adapters/xhr');
+  }
+  return adapter;
+}
+
+var defaults = {
+  // 默认的请求方法
+  adapter: getDefaultAdapter(),
+
+  // 格式化请求requestData，这会请求发送前使用
+  transformRequest: [function transformRequest(data, headers) {
+    // 格式化header属性名，将header中不标准的属性名，格式化为Accept属性名
+    normalizeHeaderName(headers, 'Accept');
+    // 格式化header属性名，将header中不标准的属性名，格式化为Content-Type属性名
+    normalizeHeaderName(headers, 'Content-Type');
+    
+    if (utils.isFormData(data) ||
+      utils.isArrayBuffer(data) ||
+      utils.isBuffer(data) ||
+      utils.isStream(data) ||
+      utils.isFile(data) ||
+      utils.isBlob(data)
+    ) {
+      return data;
+    }
+    if (utils.isArrayBufferView(data)) {
+      return data.buffer;
+    }
+    // URLSearchParams提供了一些用来处理URL查询字符串接口
+    // 如果是URLSearchParams对象
+    if (utils.isURLSearchParams(data)) {
+      // Content-Type设置为application/x-www-form-urlencoded
+      // application/x-www-form-urlencoded，数据被编码成以&分隔的键值对
+      setContentTypeIfUnset(headers, 'application/x-www-form-urlencoded;charset=utf-8');
+      return data.toString();
+    }
+    // 如果是对象
+    if (utils.isObject(data)) {
+      // Content-Type设置为application/json
+      setContentTypeIfUnset(headers, 'application/json;charset=utf-8');
+      // 将请求正文格式化为JSON字符串，并返回
+      return JSON.stringify(data);
+    }
+    return data;
+  }],
+  
+  // 格式化响应resposeData，这会响应接受后使用
+  transformResponse: [function transformResponse(data) {
+    /*eslint no-param-reassign:0*/
+    if (typeof data === 'string') {
+      try {
+        data = JSON.parse(data);
+      } catch (e) { /* Ignore */ }
+    }
+    return data;
+  }],
+
+  /**
+   * A timeout in milliseconds to abort a request. If set to 0 (default) a
+   * timeout is not created.
+   */
+  // 默认超时时间
+  timeout: 0,
+  
+  // xsrf设置的cookie的key
+  xsrfCookieName: 'XSRF-TOKEN',
+  // xsrf设置header的key
+  xsrfHeaderName: 'X-XSRF-TOKEN',
+
+  maxContentLength: -1,
+  
+  // 验证请求的状态
+  // 在处理请求的Promise会被使用
+  validateStatus: function validateStatus(status) {
+    return status >= 200 && status < 300;
+  }
+};
+
+defaults.headers = {
+  common: {
+    'Accept': 'application/json, text/plain, */*'
+  }
+};
+
+utils.forEach(['delete', 'get', 'head'], function forEachMethodNoData(method) {
+  defaults.headers[method] = {};
+});
+
+// 为post，put，patch请求设置默认的Content-Type
+utils.forEach(['post', 'put', 'patch'], function forEachMethodWithData(method) {
+  defaults.headers[method] = utils.merge(DEFAULT_CONTENT_TYPE);
+});
+
+module.exports = defaults;
+````
+##### 7、InterceptorManager.js
+````js
+// 拦截器类
+function InterceptorManager() {
+  // handlers数组用来存储拦截器
+  this.handlers = [];
+}
+
+/**
+ * Add a new interceptor to the stack
+ *
+ * @param {Function} fulfilled The function to handle `then` for a `Promise`
+ * @param {Function} rejected The function to handle `reject` for a `Promise`
+ *
+ * @return {Number} An ID used to remove interceptor later
+ */
+// 添加拦截器，use方法接收两个参数，成功的回调以及失败的回调
+InterceptorManager.prototype.use = function use(fulfilled, rejected) {
+  this.handlers.push({
+    // 成功的回调
+    fulfilled: fulfilled,
+    // 失败的回调
+    rejected: rejected
+  });
+  return this.handlers.length - 1;
+};
+
+/**
+ * Remove an interceptor from the stack
+ *
+ * @param {Number} id The ID that was returned by `use`
+ */
+// 根据id(索引)，删除实例handlers属性中拦截器
+InterceptorManager.prototype.eject = function eject(id) {
+  if (this.handlers[id]) {
+    this.handlers[id] = null;
+  }
+};
+
+/**
+ * Iterate over all the registered interceptors
+ *
+ * This method is particularly useful for skipping over any
+ * interceptors that may have become `null` calling `eject`.
+ *
+ * @param {Function} fn The function to call for each interceptor
+ */
+// 循环拦截器
+InterceptorManager.prototype.forEach = function forEach(fn) {
+  utils.forEach(this.handlers, function forEachHandler(h) {
+    if (h !== null) {
+      fn(h);
+    }
+  });
+};
+
+module.exports = InterceptorManager;
+````
+##### 8、dispatchRequest.js
+````js
+/**
+ * Throws a `Cancel` if cancellation has been requested.
+ */
+// 判断请求是否已被取消，如果已经被取消，抛出已取消
+function throwIfCancellationRequested(config) {
+  if (config.cancelToken) {
+    config.cancelToken.throwIfRequested();
+  }
+}
+
+/**
+ * Dispatch a request to the server using the configured adapter.
+ *
+ * @param {object} config The config that is to be used for the request
+ * @returns {Promise} The Promise to be fulfilled
+ */
+module.exports = function dispatchRequest(config) {
+  throwIfCancellationRequested(config);
+
+  // Support baseURL config
+  // 如果包含baseUrl, 并且不是config.url绝对路径，组合baseUrl以及config.url
+  if (config.baseURL && !isAbsoluteURL(config.url)) {
+    // 组合baseURL与url形成完整的请求路径
+    config.url = combineURLs(config.baseURL, config.url);
+  }
+
+  // Ensure headers exist
+  config.headers = config.headers || {};
+
+  // Transform request data
+  // 使用/lib/defaults.js中的transformRequest方法，对config.headers和config.data进行格式化
+  // 比如将headers中的Accept，Content-Type统一处理成大写
+  // 比如如果请求正文是一个Object会格式化为JSON字符串，并添加application/json;charset=utf-8的Content-Type
+  // 等一系列操作
+  config.data = transformData(
+    config.data,
+    config.headers,
+    config.transformRequest
+  );
+
+  // Flatten headers
+  // 合并不同配置的headers，config.headers的配置优先级更高
+  config.headers = utils.merge(
+    config.headers.common || {},
+    config.headers[config.method] || {},
+    config.headers || {}
+  );
+
+  // 删除headers中的method属性
+  utils.forEach(
+    ['delete', 'get', 'head', 'post', 'put', 'patch', 'common'],
+    function cleanHeaderConfig(method) {
+      delete config.headers[method];
+    }
+  );
+
+  var adapter = config.adapter || defaults.adapter;
+
+  return adapter(config).then(function onAdapterResolution(response) {
+    throwIfCancellationRequested(config);
+
+    // Transform response data
+    // 使用/lib/defaults.js中的transformResponse方法，对服务器返回的数据进行格式化
+    // 例如，使用JSON.parse对响应正文进行解析
+    response.data = transformData(
+      response.data,
+      response.headers,
+      config.transformResponse
+    );
+
+    return response;
+    // 请求失败的回调
+  }, function onAdapterRejection(reason) {
+    if (!isCancel(reason)) {
+      throwIfCancellationRequested(config);
+
+      // Transform response data
+      if (reason && reason.response) {
+        reason.response.data = transformData(
+          reason.response.data,
+          reason.response.headers,
+          config.transformResponse
+        );
+      }
+    }
+
+    return Promise.reject(reason);
+  });
+};
+````
