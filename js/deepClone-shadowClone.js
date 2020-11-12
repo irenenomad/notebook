@@ -88,3 +88,63 @@ function shallowCopy(src) {
 2、深拷贝将B对象拷贝到A对象中，包括B里面的对象。
 3、浅拷贝将B对象拷贝到A对象中但不包括B里面的子对象。
  */
+
+
+function Promise(excutor){
+  this.count=0;
+
+  this.status='pending';
+  this.value=undefined;
+  this.reason=undefined;
+  function resolve(value) {
+    if(this.status==='pending'){
+      this.count++;
+      this.status='resolve';
+      this.value=value;
+    }
+  }
+  function reject(reason) {
+    if(this.status==='pending'){
+      this.status='reject';
+      this.reason=reason;
+    }
+  }
+  function promisall(arrPromise) {
+    if (this.count === arrPromise.length) {
+
+    }
+  }
+    excutor(resolve,reject);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
