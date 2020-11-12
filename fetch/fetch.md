@@ -11,8 +11,8 @@
     （5）不支持timeout处理；
     （6）不支持jsonp，当然可以引入 fetch-jsonp 来支持；
     （7）没有拦截器得自己写；
-![fetch1](fetch1.png)
-![fetch2](fetch2.png)
+![alt](fetch1.png)
+![avatar](fetch2.png)
 ````js
 (function (self) {
   'use strict';
